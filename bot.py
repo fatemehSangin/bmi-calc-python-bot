@@ -1,6 +1,5 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# This program is dedicated to the public domain under the CC0 license.
 
 """
 Simple Bot to calculate BMI-index through Telegram messenger.
@@ -90,11 +89,11 @@ def main():
     # on non-command message - echo the message on Telegram
     dp.add_handler(MessageHandler(Filters.text & (~Filters.command), echo))
 
-    # log all errors
-    dp.add_error_handler(error)
-
     # on commands which are not defined
     dp.add_handler(MessageHandler(Filters.command, unknown))
+
+    # log all errors
+    dp.add_error_handler(error)
 
     # Start the Bot
     updater.start_polling()
