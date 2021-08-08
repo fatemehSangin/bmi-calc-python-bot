@@ -28,6 +28,7 @@ from telegram.ext import (
     ConversationHandler,
     CallbackContext,
 )
+import enum
 import settings
 
 TOKEN = settings.TOKEN
@@ -37,18 +38,32 @@ INSTRUCTION_MESSAGE = "Please enter your gender, then your weight and then your 
 CANCEL_INSTRUCTION_MESSAGE = "(You can cancel the calculation by entering /cancel command)\n"
 NEW_CALC_INSTRUCTION_MESSAGE = "You can have a new calculation anytime. Just enter the '/calc' command.\n"
 
+data = {'weight': "", 'height': "", 'gender': ""}
+
+class Gender(enum.Enum):
+    Man = "Man"
+    Woman = "Woman"
+
+
 # Enable logging
 logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
                     level=logging.INFO)
 
 logger = logging.getLogger(__name__)
 
+def get_bmi(weight, height)->float:
+    height_m = int(height)/100
+    bmi = float(weight)/(height_m*height_m)
+    return bmi
+
 
 # Define a few command handlers. These usually take the two arguments update and
 # context. Error handlers also receive the raised TelegramError object in error.
 def start(update: Update, context: CallbackContext) -> int:
     """Send a message when the command /start is issued."""
-    reply_keyboard = [['Man', 'Woman']]
+    global data
+    data = {'weight': "", 'height': "", 'gender': ""}
+    reply_keyboard = [["Man", "Woman"]]
     update.message.reply_text(
         WELCOME_MESSAGE + INSTRUCTION_MESSAGE + CANCEL_INSTRUCTION_MESSAGE,
         reply_markup=ReplyKeyboardMarkup(
@@ -61,6 +76,7 @@ def start(update: Update, context: CallbackContext) -> int:
 def get_gender(update: Update, context: CallbackContext) -> int:
     """Stores the selected gender and asks for a weight afterwards."""
     user = update.message.from_user
+    data['gender'] = update.message.text
     logger.info("Gender of %s: %s", user.first_name, update.message.text)
     update.message.reply_text(
         'Great! Now please enter your weight in kilograms: '
@@ -73,7 +89,9 @@ def get_gender(update: Update, context: CallbackContext) -> int:
 def get_weight(update: Update, context: CallbackContext) -> int:
     """Stores the user's weight and ends the conversation."""
     user = update.message.from_user
-    logger.info("Weight of %s: %s", user.first_name, update.message.text)
+    data['weight'] = update.message.text
+    weight = update.message.text
+    logger.info("Weight of %s: %s", user.first_name, weight)
     update.message.reply_text('Great! Now please enter your height in centimeters: '
             + CANCEL_INSTRUCTION_MESSAGE)
     return HEIGHT
@@ -82,11 +100,15 @@ def get_weight(update: Update, context: CallbackContext) -> int:
 def get_height(update: Update, context: CallbackContext) -> int:
     """Stores the user's height and ends the conversation."""
     user = update.message.from_user
+    data['height'] = update.message.text
+    bmi = get_bmi(data['weight'], data['height'])
     logger.info("Height of %s: %s", user.first_name, update.message.text)
-    update.message.reply_text('Thank you!\n'
+    update.message.reply_text('Thank you!\nyour BMI is: '+  str(bmi)
             + NEW_CALC_INSTRUCTION_MESSAGE,
         reply_markup=ReplyKeyboardRemove()
     )
+
+
     return ConversationHandler.END
 
 
@@ -104,7 +126,7 @@ def cancel(update: Update, context: CallbackContext) -> int:
 
 def new_calc(update: Update, context: CallbackContext)-> int:
     """Send a message when the command /calc is issued."""
-    reply_keyboard = [['Man', 'Woman']]
+    reply_keyboard = [["Man", "Woman"]]
     update.message.reply_text(
         INSTRUCTION_MESSAGE + CANCEL_INSTRUCTION_MESSAGE,
         reply_markup=ReplyKeyboardMarkup(
