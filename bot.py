@@ -19,12 +19,18 @@ bot.
 
 
 import logging
-from telegram.ext import Updater, CommandHandler, MessageHandler, Filters
-import re
+from telegram.ext import (
+    Updater,
+    CommandHandler,
+    MessageHandler,
+    Filters,
+    ConversationHandler,
+    CallbackContext,
+)
 import settings
 
 TOKEN = settings.TOKEN
-global_update = None
+GENDER, WEIGHT, HEIGHT = range(3)
 WELCOME_MESSAGE = r"""Hello. Welocme to the BMI-Index calculator Bot!
 """
 INSTRUCTION_MESSAGE = """Please enter your weight and height in kilograms and centimeters respectively:
@@ -81,9 +87,13 @@ def main():
     # Get the dispatcher to register handlers
     dp = updater.dispatcher
 
-    # on different commands - answer in Telegram
+    # on start commands - have a small conversation
     dp.add_handler(CommandHandler("start", start))
+
+    #on help command, show user some instructions.
     dp.add_handler(CommandHandler("help", help))
+
+    #on calc command, help user have a new calculation.
     dp.add_handler(CommandHandler("calc", new_calc))
 
     # on non-command message - echo the message on Telegram
