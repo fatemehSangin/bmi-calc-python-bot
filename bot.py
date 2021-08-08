@@ -22,9 +22,9 @@ bot.
 import logging
 from telegram.ext import Updater, CommandHandler, MessageHandler, Filters
 import re
+import settings
 
-
-TOKEN = "f"
+TOKEN = settings.TOKEN
 global_update = None
 WELCOME_MESSAGE = r"""Hello. Welocme to the BMI-Index calculator Bot!
 """
