@@ -26,10 +26,10 @@ import re
 
 TOKEN = "f"
 global_update = None
-WELCOME_MESSAGE = r"""سلام به ربات محاسبه گر شاخص BMI خوش آمدید
+WELCOME_MESSAGE = r"""Hello. Welocme to the BMI-Index calculator Bot!
 """
-INSTRUCTION_MESSAGE = """لطفا وزن (کیلوگرم) و قد (متر) خود را به فرمت زیر وارد کنید:
-""" + "weight(kg)-height(m)"
+INSTRUCTION_MESSAGE = """Please enter your weight and height in kilograms and centimeters respectively:
+""" + "WEIGHT(kg)-HEIGHT(cm)"
 
 
 # Enable logging
