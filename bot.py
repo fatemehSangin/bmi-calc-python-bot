@@ -19,6 +19,7 @@ bot.
 
 
 import logging
+from telegram import ReplyKeyboardMarkup, ReplyKeyboardRemove, Update
 from telegram.ext import (
     Updater,
     CommandHandler,
@@ -31,11 +32,10 @@ import settings
 
 TOKEN = settings.TOKEN
 GENDER, WEIGHT, HEIGHT = range(3)
-WELCOME_MESSAGE = r"""Hello. Welocme to the BMI-Index calculator Bot!
-"""
-INSTRUCTION_MESSAGE = """Please enter your weight and height in kilograms and centimeters respectively:
-""" + "WEIGHT(kg)-HEIGHT(cm)"
-
+WELCOME_MESSAGE = "Hello. Welocme to the BMI-Index calculator Bot!\n"
+INSTRUCTION_MESSAGE = "Please enter your gender, then your weight and then your height in kilograms and centimeters respectively:\n"
+CANCEL_INSTRUCTION_MESSAGE = "(You can cancel the calculation by entering /cancel command)\n"
+NEW_CALC_INSTRUCTION_MESSAGE = "You can have a new calculation anytime. Just enter the '/calc' command.\n"
 
 # Enable logging
 logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
@@ -46,33 +46,88 @@ logger = logging.getLogger(__name__)
 
 # Define a few command handlers. These usually take the two arguments update and
 # context. Error handlers also receive the raised TelegramError object in error.
-def start(update, context):
+def start(update: Update, context: CallbackContext) -> int:
     """Send a message when the command /start is issued."""
-    update.message.reply_text(WELCOME_MESSAGE + INSTRUCTION_MESSAGE)
+    reply_keyboard = [['Man', 'Woman']]
+    update.message.reply_text(
+        WELCOME_MESSAGE + INSTRUCTION_MESSAGE + CANCEL_INSTRUCTION_MESSAGE,
+        reply_markup=ReplyKeyboardMarkup(
+            reply_keyboard, one_time_keyboard=True, input_field_placeholder='Are you a Man or a Woman?'
+        ),
+    )
+    return GENDER
 
 
-def help(update, context):
+def get_gender(update: Update, context: CallbackContext) -> int:
+    """Stores the selected gender and asks for a weight afterwards."""
+    user = update.message.from_user
+    logger.info("Gender of %s: %s", user.first_name, update.message.text)
+    update.message.reply_text(
+        'Great! Now please enter your weight in kilograms: '
+            + CANCEL_INSTRUCTION_MESSAGE,
+        reply_markup=ReplyKeyboardRemove(),
+    )
+    return WEIGHT
+
+
+def get_weight(update: Update, context: CallbackContext) -> int:
+    """Stores the user's weight and ends the conversation."""
+    user = update.message.from_user
+    logger.info("Weight of %s: %s", user.first_name, update.message.text)
+    update.message.reply_text('Great! Now please enter your height in centimeters: '
+            + CANCEL_INSTRUCTION_MESSAGE)
+    return HEIGHT
+
+
+def get_height(update: Update, context: CallbackContext) -> int:
+    """Stores the user's height and ends the conversation."""
+    user = update.message.from_user
+    logger.info("Height of %s: %s", user.first_name, update.message.text)
+    update.message.reply_text('Thank you!\n' + NEW_CALC_INSTRUCTION_MESSAGE)
+    return ConversationHandler.END
+
+
+def cancel(update: Update, context: CallbackContext) -> int:
+    """Cancels and ends the conversation."""
+    user = update.message.from_user
+    logger.info("User %s canceled the conversation.", user.first_name)
+    update.message.reply_text(
+        'Bye! I hope I can help you again with a new calculation some day.\n'
+            +NEW_CALC_INSTRUCTION_MESSAGE,
+        reply_markup=ReplyKeyboardRemove()
+    )
+    return ConversationHandler.END
+
+
+def new_calc(update: Update, context: CallbackContext)-> int:
+    """Send a message when the command /calc is issued."""
+    reply_keyboard = [['Man', 'Woman']]
+    update.message.reply_text(
+        INSTRUCTION_MESSAGE + CANCEL_INSTRUCTION_MESSAGE,
+        reply_markup=ReplyKeyboardMarkup(
+            reply_keyboard, one_time_keyboard=True, input_field_placeholder='Are you a Man or a Woman?'
+        ),
+    )
+    return GENDER
+
+
+def help(update: Update, context: CallbackContext):
     """Send a message when the command /help is issued."""
     update.message.reply_text('HELP!')
     context.bot.send_message(chat_id = update.effective_chat.id, text="HELP!")
 
 
-def new_calc(update, context):
-    """Send a message when the command /start is issued."""
-    update.message.reply_text(INSTRUCTION_MESSAGE)
-
-
-def echo(update, context):
+def echo(update: Update, context: CallbackContext):
     """Echo the user message."""
     update.message.reply_text(update.message.text)
 
 
-def unknown(update, context):
+def unknown(update: Update, context: CallbackContext):
     """"Tell them the command format is not correct. """
     update.message.reply_text("Sorry, Such command does not exist. Please Try again.")
 
 
-def error(update, context):
+def error(update: Update, context: CallbackContext):
     """Log Errors caused by Updates."""
     logger.warning('Update "%s" caused error "%s"', update, context.error)
 
@@ -88,13 +143,31 @@ def main():
     dp = updater.dispatcher
 
     # on start commands - have a small conversation
-    dp.add_handler(CommandHandler("start", start))
+    start_conv_handler = ConversationHandler(
+        entry_points=[CommandHandler('start', start)],
+        states={
+            GENDER: [MessageHandler(Filters.regex('^(Man|Woman)$'), get_gender)],
+            WEIGHT: [MessageHandler(Filters.text & ~Filters.command, get_weight)],
+            HEIGHT: [MessageHandler(Filters.text & ~Filters.command, get_height)],
+        },
+        fallbacks=[CommandHandler('cancel', cancel)],
+    )
+    dp.add_handler(start_conv_handler)
 
     #on help command, show user some instructions.
     dp.add_handler(CommandHandler("help", help))
 
     #on calc command, help user have a new calculation.
-    dp.add_handler(CommandHandler("calc", new_calc))
+    new_clc_conv_handler = ConversationHandler(
+        entry_points=[CommandHandler('calc', new_calc)],
+        states={
+            GENDER: [MessageHandler(Filters.regex('^(Man|Woman)$'), get_gender)],
+            WEIGHT: [MessageHandler(Filters.text & ~Filters.command, get_weight)],
+            HEIGHT: [MessageHandler(Filters.text & ~Filters.command, get_height)],
+        },
+        fallbacks=[CommandHandler('cancel', cancel)],
+    )
+    dp.add_handler(new_clc_conv_handler)
 
     # on non-command message - echo the message on Telegram
     dp.add_handler(MessageHandler(Filters.text & (~Filters.command), echo))
