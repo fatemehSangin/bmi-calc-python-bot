@@ -83,7 +83,10 @@ def get_height(update: Update, context: CallbackContext) -> int:
     """Stores the user's height and ends the conversation."""
     user = update.message.from_user
     logger.info("Height of %s: %s", user.first_name, update.message.text)
-    update.message.reply_text('Thank you!\n' + NEW_CALC_INSTRUCTION_MESSAGE)
+    update.message.reply_text('Thank you!\n'
+            + NEW_CALC_INSTRUCTION_MESSAGE,
+        reply_markup=ReplyKeyboardRemove()
+    )
     return ConversationHandler.END
 
 
