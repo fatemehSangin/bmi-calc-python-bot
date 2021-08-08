@@ -62,6 +62,11 @@ def echo(update, context):
     update.message.reply_text(update.message.text)
 
 
+def unknown(update, context):
+    """"Tell them the command format is not correct. """
+    update.message.reply_text("Sorry, Such command does not exist. Please Try again.")
+
+
 def error(update, context):
     """Log Errors caused by Updates."""
     logger.warning('Update "%s" caused error "%s"', update, context.error)
@@ -87,6 +92,9 @@ def main():
 
     # log all errors
     dp.add_error_handler(error)
+
+    # on commands which are not defined
+    dp.add_handler(MessageHandler(Filters.command, unknown))
 
     # Start the Bot
     updater.start_polling()
