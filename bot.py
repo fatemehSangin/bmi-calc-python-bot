@@ -31,6 +31,7 @@ from telegram.ext import (
 import enum
 import settings
 
+BOT_COMMANDS = ['start', 'help', 'calc']
 TOKEN = settings.TOKEN
 GENDER, WEIGHT, HEIGHT = range(3)
 WELCOME_MESSAGE = "Hello. Welocme to the BMI-Index calculator Bot!\n"
@@ -79,7 +80,7 @@ def get_gender(update: Update, context: CallbackContext) -> int:
     data['gender'] = update.message.text
     logger.info("Gender of %s: %s", user.first_name, update.message.text)
     update.message.reply_text(
-        'Great! Now please enter your weight in kilograms: '
+        'Great! Now please enter your WEIGHT in kilograms: '
             + CANCEL_INSTRUCTION_MESSAGE,
         reply_markup=ReplyKeyboardRemove(),
     )
@@ -92,7 +93,7 @@ def get_weight(update: Update, context: CallbackContext) -> int:
     data['weight'] = update.message.text
     weight = update.message.text
     logger.info("Weight of %s: %s", user.first_name, weight)
-    update.message.reply_text('Great! Now please enter your height in centimeters: '
+    update.message.reply_text('Great! Now please enter your HEIGHT in centimeters: '
             + CANCEL_INSTRUCTION_MESSAGE)
     return HEIGHT
 
@@ -107,12 +108,10 @@ def get_height(update: Update, context: CallbackContext) -> int:
             + NEW_CALC_INSTRUCTION_MESSAGE,
         reply_markup=ReplyKeyboardRemove()
     )
-
-
     return ConversationHandler.END
 
 
-def cancel(update: Update, context: CallbackContext) -> int:
+def normalCancel(update: Update, context: CallbackContext) -> int:
     """Cancels and ends the conversation."""
     user = update.message.from_user
     logger.info("User %s canceled the conversation.", user.first_name)
@@ -175,7 +174,9 @@ def main():
             WEIGHT: [MessageHandler(Filters.text & ~Filters.command, get_weight)],
             HEIGHT: [MessageHandler(Filters.text & ~Filters.command, get_height)],
         },
-        fallbacks=[CommandHandler('cancel', cancel)],
+        fallbacks=[ CommandHandler('cancel', normalCancel),
+                    MessageHandler(Filters.regex('/calc'), new_calc),
+                    MessageHandler(Filters.regex('/start'), start)],
     )
     dp.add_handler(start_conv_handler)
 
@@ -190,7 +191,9 @@ def main():
             WEIGHT: [MessageHandler(Filters.text & ~Filters.command, get_weight)],
             HEIGHT: [MessageHandler(Filters.text & ~Filters.command, get_height)],
         },
-        fallbacks=[CommandHandler('cancel', cancel)],
+        fallbacks=[ CommandHandler('cancel', normalCancel),
+                    MessageHandler(Filters.regex('/calc'), new_calc),
+                    MessageHandler(Filters.regex('/start'), start)],
     )
     dp.add_handler(new_clc_conv_handler)
 
