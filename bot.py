@@ -16,8 +16,6 @@ Press Ctrl-C on the command line or send a signal to the process to stop the
 bot.
 """
 
-
-
 import logging
 from telegram import ReplyKeyboardMarkup, ReplyKeyboardRemove, Update
 from telegram.ext import (
@@ -33,17 +31,15 @@ import settings
 
 BOT_COMMANDS = ['start', 'help', 'calc']
 TOKEN = settings.TOKEN
-GENDER, WEIGHT, HEIGHT = range(3)
+
+NUM_OF_PARAMS = 4
+GENDER, AGE, WEIGHT, HEIGHT = range(NUM_OF_PARAMS)
+
 WELCOME_MESSAGE = "Hello. Welocme to the BMI-Index calculator Bot!\n"
-INSTRUCTION_MESSAGE = "Please enter your gender, then your weight and then your height in kilograms and centimeters respectively:\n"
+INSTRUCTION_MESSAGE = "Please enter your gender and your age, then your weight and your height in kilograms and centimeters respectively:\n"
 CANCEL_INSTRUCTION_MESSAGE = "(You can cancel the calculation by entering /cancel command)\n"
 NEW_CALC_INSTRUCTION_MESSAGE = "You can have a new calculation anytime. Just enter the '/calc' command.\n"
 
-data = {'weight': "", 'height': "", 'gender': ""}
-
-class Gender(enum.Enum):
-    Man = "Man"
-    Woman = "Woman"
 
 
 # Enable logging
@@ -52,10 +48,19 @@ logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s
 
 logger = logging.getLogger(__name__)
 
+
+data = {'gender': "", 'age': "", 'weight': "", 'height': ""}
+
+class Gender(enum.Enum):
+    Man = "Man"
+    Woman = "Woman"
+
+
 def get_bmi(weight, height)->float:
     height_m = int(height)/100
     bmi = float(weight)/(height_m*height_m)
     return bmi
+
 
 
 # Define a few command handlers. These usually take the two arguments update and
@@ -63,7 +68,7 @@ def get_bmi(weight, height)->float:
 def start(update: Update, context: CallbackContext) -> int:
     """Send a message when the command /start is issued."""
     global data
-    data = {'weight': "", 'height': "", 'gender': ""}
+    data = {'gender': "", 'age': "", 'weight': "", 'height': ""}
     reply_keyboard = [["Man", "Woman"]]
     update.message.reply_text(
         WELCOME_MESSAGE + INSTRUCTION_MESSAGE + CANCEL_INSTRUCTION_MESSAGE,
@@ -75,10 +80,23 @@ def start(update: Update, context: CallbackContext) -> int:
 
 
 def get_gender(update: Update, context: CallbackContext) -> int:
-    """Stores the selected gender and asks for a weight afterwards."""
+    """Stores the selected gender and asks for an age afterwards."""
     user = update.message.from_user
     data['gender'] = update.message.text
     logger.info("Gender of %s: %s", user.first_name, update.message.text)
+    update.message.reply_text(
+        'Great! Now please enter your AGE: '
+            + CANCEL_INSTRUCTION_MESSAGE,
+        reply_markup=ReplyKeyboardRemove(),
+    )
+    return AGE
+
+
+def get_age(update: Update, context: CallbackContext) -> int:
+    """Stores the selected age and asks for a weight afterwards."""
+    user = update.message.from_user
+    data['age'] = update.message.text
+    logger.info("Age of %s: %s", user.first_name, update.message.text)
     update.message.reply_text(
         'Great! Now please enter your WEIGHT in kilograms: '
             + CANCEL_INSTRUCTION_MESSAGE,
@@ -88,7 +106,7 @@ def get_gender(update: Update, context: CallbackContext) -> int:
 
 
 def get_weight(update: Update, context: CallbackContext) -> int:
-    """Stores the user's weight and ends the conversation."""
+    """Stores the user's weight and asks for a height afterwards."""
     user = update.message.from_user
     data['weight'] = update.message.text
     weight = update.message.text
@@ -171,6 +189,7 @@ def main():
         entry_points=[CommandHandler('start', start)],
         states={
             GENDER: [MessageHandler(Filters.regex('^(Man|Woman)$'), get_gender)],
+            AGE:    [MessageHandler(Filters.text & ~Filters.command, get_age)],
             WEIGHT: [MessageHandler(Filters.text & ~Filters.command, get_weight)],
             HEIGHT: [MessageHandler(Filters.text & ~Filters.command, get_height)],
         },
@@ -188,6 +207,7 @@ def main():
         entry_points=[CommandHandler('calc', new_calc)],
         states={
             GENDER: [MessageHandler(Filters.regex('^(Man|Woman)$'), get_gender)],
+            AGE:    [MessageHandler(Filters.text & ~Filters.command, get_age)],
             WEIGHT: [MessageHandler(Filters.text & ~Filters.command, get_weight)],
             HEIGHT: [MessageHandler(Filters.text & ~Filters.command, get_height)],
         },
