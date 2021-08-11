@@ -186,7 +186,7 @@ def main():
 
     # on start commands - have a small conversation
     start_conv_handler = ConversationHandler(
-        entry_points=[CommandHandler('start', start)],
+        entry_points=[CommandHandler('start', start), CommandHandler('calc', new_calc)],
         states={
             GENDER: [MessageHandler(Filters.regex('^(Man|Woman)$'), get_gender)],
             AGE:    [MessageHandler(Filters.text & ~Filters.command, get_age)],
@@ -201,21 +201,6 @@ def main():
 
     #on help command, show user some instructions.
     dp.add_handler(CommandHandler("help", help))
-
-    #on calc command, help user have a new calculation.
-    new_clc_conv_handler = ConversationHandler(
-        entry_points=[CommandHandler('calc', new_calc)],
-        states={
-            GENDER: [MessageHandler(Filters.regex('^(Man|Woman)$'), get_gender)],
-            AGE:    [MessageHandler(Filters.text & ~Filters.command, get_age)],
-            WEIGHT: [MessageHandler(Filters.text & ~Filters.command, get_weight)],
-            HEIGHT: [MessageHandler(Filters.text & ~Filters.command, get_height)],
-        },
-        fallbacks=[ CommandHandler('cancel', normalCancel),
-                    MessageHandler(Filters.regex('/calc'), new_calc),
-                    MessageHandler(Filters.regex('/start'), start)],
-    )
-    dp.add_handler(new_clc_conv_handler)
 
     # on non-command message - echo the message on Telegram
     dp.add_handler(MessageHandler(Filters.text & (~Filters.command), echo))
