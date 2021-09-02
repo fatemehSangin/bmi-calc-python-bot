@@ -155,8 +155,10 @@ def new_calc(update: Update, context: CallbackContext)-> int:
 
 def help(update: Update, context: CallbackContext):
     """Send a message when the command /help is issued."""
-    update.message.reply_text('HELP!')
-    context.bot.send_message(chat_id = update.effective_chat.id, text="HELP!")
+    msg = 'Hello dear user!\n we let you calculate your BMI(Body Mass Index).\nPlease enter /calc\
+ and follow the instructions towards making your calculations'
+    update.message.reply_text(msg)
+
 
 
 def echo(update: Update, context: CallbackContext):
